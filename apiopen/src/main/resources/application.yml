@@ -82,3 +82,7 @@ knife4j:
         api-rule: package
         api-rule-resources:
           - com.frank.springbootinit.controller
+frankapi:
+  client:
+    access-key: 123aaa
+    secret-key: 123bbb

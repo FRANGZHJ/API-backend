@@ -116,7 +116,15 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
 
         return loginUserVO;
     }
+    @Override
+    public User getUser(HttpServletRequest request) {
+        User user = (User) request.getSession().getAttribute(UserConstant.USER_LOGIN);
+        if(user == null ){
+            throw new BusinessException(ErrorCode.OPERATION_ERROR,"当前用户未登录");
+        }
 
+        return user;
+    }
     @Override
     public Wrapper<User> getQueryWrapper(UserQueryRequest userQueryRequest) {
 

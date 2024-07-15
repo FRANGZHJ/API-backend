@@ -10,6 +10,13 @@
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Class" />
+      </list>
+    </option>
+  </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
@@ -62,7 +69,7 @@
   <component name="ReactorSettings">
     <option name="notificationShown" value="true" />
   </component>
-  <component name="RunManager" selected="Spring Boot.MainApplication">
+  <component name="RunManager" selected="Spring Boot.InterfaceFrankApplication">
     <configuration name="InterfaceFrankApplication" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot" temporary="true" nameIsGenerated="true">
       <module name="interface-frank" />
       <option name="SPRING_BOOT_MAIN_CLASS" value="com.example.interfacefrank.InterfaceFrankApplication" />
@@ -102,6 +109,7 @@
       <workItem from="1721021598560" duration="25000" />
       <workItem from="1721021651007" duration="457000" />
       <workItem from="1721022240570" duration="216000" />
+      <workItem from="1721022986697" duration="2716000" />
     </task>
     <task id="LOCAL-00001" summary="aksk生成">
       <option name="closed" value="true" />

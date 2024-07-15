@@ -2,7 +2,9 @@ package com.frank.springbootinit.controller;
 
 
 import cn.hutool.json.JSONUtil;
+import cn.hutool.json.ObjectMapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.frank.frankinterfacesdk.Client.ApiClient;
 import com.frank.springbootinit.annotation.AuthCheck;
 import com.frank.springbootinit.common.BaseResponse;
 import com.frank.springbootinit.common.DeleteRequest;
@@ -14,12 +16,15 @@ import com.frank.springbootinit.exception.ThrowUtils;
 import com.frank.springbootinit.model.dto.interfaceInfo.InterfaceInfoAddRequest;
 import com.frank.springbootinit.model.dto.interfaceInfo.InterfaceInfoQueryRequest;
 import com.frank.springbootinit.model.dto.interfaceInfo.InterfaceInfoUpdateRequest;
+import com.frank.springbootinit.model.dto.interfaceInfo.InvokeInterfaceRequest;
 import com.frank.springbootinit.model.entity.InterfaceInfo;
 import com.frank.springbootinit.model.entity.User;
 import com.frank.springbootinit.model.vo.InterfaceInfoVO;
 import com.frank.springbootinit.model.vo.LoginUserVO;
 import com.frank.springbootinit.service.InterfaceInfoService;
 import com.frank.springbootinit.service.UserService;
+import com.google.gson.Gson;
+import io.swagger.annotations.Api;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.web.bind.annotation.*;
@@ -27,6 +32,7 @@ import org.springframework.web.bind.annotation.*;
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import java.util.List;
+import java.util.Objects;
 
 @RestController
 @Slf4j
@@ -38,6 +44,9 @@ public class InterfaceInfoController {
 
     @Resource
     private UserService userService;
+
+    @Resource
+    private ApiClient apiClient;
 
     // region 增删改查
 
@@ -185,6 +194,38 @@ public class InterfaceInfoController {
         boolean result = interfaceInfoService.updateById(interfaceInfo1);
         if(!result) throw new BusinessException(ErrorCode.OPERATION_ERROR);
         return ResultUtils.success(result);
+    }
+
+
+    /**
+     * 接口调用测试
+     * @param invokeInterfaceRequest
+     * @param request
+     * @return
+     */
+    @PostMapping("/invoke")
+    public BaseResponse<Object> invokeInterface(@RequestBody InvokeInterfaceRequest invokeInterfaceRequest,HttpServletRequest request){
+        //1.先检验当前请求参数
+        if(invokeInterfaceRequest == null || invokeInterfaceRequest.getId() <=0 ) throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        //2.查询当前接口是否存在
+        Long id = invokeInterfaceRequest.getId();
+        InterfaceInfo interfaceInfo = interfaceInfoService.getById(id);
+        if(interfaceInfo == null) throw new BusinessException(ErrorCode.PARAMS_ERROR,"当前接口不存在");
+        //3.获得当前用户的ak，sk
+        User user = userService.getUser(request);
+        if(user == null) throw new BusinessException(ErrorCode.NO_AUTH_ERROR,"当前用户不存在");
+        String accessKey = user.getAccessKey();
+        String secretKey = user.getSecretKey();
+        //4.创建ApiClient
+        ApiClient apiClient = new ApiClient("123aaa", "123bbb");
+        //5.拿到当前请求的参数信息
+        String requestParam = invokeInterfaceRequest.getRequestParam();
+        Gson gson = new Gson();
+        com.frank.frankinterfacesdk.model.User requestUser = gson.fromJson(requestParam, com.frank.frankinterfacesdk.model.User.class);
+        String response = apiClient.getNameByPost(requestUser);
+//        String response = apiClient.getNameByPost(requestUser);
+        return ResultUtils.success(response);
+
     }
 
 }
