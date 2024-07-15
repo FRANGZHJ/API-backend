@@ -1,0 +1,9 @@
+server:
+  port: 8122
+  servlet:
+    context-path: /api
+
+frankapi:
+  client:
+    access-key: 123aaa
+    secret-key: 123bbb

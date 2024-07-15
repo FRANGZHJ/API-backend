@@ -1,0 +1,84 @@
+# 公共配置文件
+spring:
+  application:
+    name: apiopen
+  # 默认 dev 环境
+  profiles:
+    active: dev
+  # 支持 swagger3
+  mvc:
+    pathmatch:
+      matching-strategy: ant_path_matcher
+  # session 配置
+  session:
+    # todo 取消注释开启分布式 session（须先配置 Redis）
+    # store-type: redis
+    # 30 天过期
+    timeout: 2592000
+  # 数据库配置
+  # todo 需替换配置
+  datasource:
+    dynamic:
+      enabled: true
+      primary: db1 #设置默认的数据源或者数据源组,默认值即为master
+      strict: false #严格匹配数据源,默认false. true未匹配到指定数据源时抛异常,false使用默认数据源
+      grace-destroy: false #是否优雅关闭数据源，默认为false，设置为true时，关闭数据源时如果数据源中还存在活跃连接，至多等待10s后强制关闭
+      datasource:
+        db1:
+          driver-class-name: com.mysql.cj.jdbc.Driver
+          url: jdbc:mysql://localhost:3306/open_api_db
+          username: root
+          password: FRANK123
+        db2:
+          driver-class-name: com.mysql.cj.jdbc.Driver
+          url: jdbc:mysql://localhost:3306/mary_db
+          username: root
+          password: FRANK123
+  # Redis 配置
+  # todo 需替换配置，然后取消注释
+  redis:
+    db1:
+      database: 1
+      host: localhost
+      port: 6379
+      timeout: 5000
+    db2:
+      database: 2
+      host: localhost
+      port: 6379
+      timeout: 5000
+  # todo 需替换配置，然后取消注释
+  # 文件上传
+  servlet:
+    multipart:
+      # 大小限制
+      max-file-size: 10MB
+server:
+  address: 0.0.0.0
+  port: 8101
+  servlet:
+    context-path: /api
+    # cookie 30 天过期
+    session:
+      cookie:
+        max-age: 2592000
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: false
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  global-config:
+    db-config:
+      logic-delete-field: isDelete # 全局逻辑删除的实体字段名
+      logic-delete-value: 1 # 逻辑已删除值（默认为 1）
+      logic-not-delete-value: 0 # 逻辑未删除值（默认为 0）
+# 接口文档配置
+knife4j:
+  enable: true
+  openapi:
+    title: "接口文档"
+    version: 1.0
+    group:
+      default:
+        api-rule: package
+        api-rule-resources:
+          - com.frank.springbootinit.controller
