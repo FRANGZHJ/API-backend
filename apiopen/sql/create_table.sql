@@ -37,3 +37,18 @@ create table if not exists interface_info
     updateTime      datetime default CURRENT_TIMESTAMP  not null on update CURRENT_TIMESTAMP  comment '修改时间',
     isDelete        tinyint         default 0           not null    comment '逻辑删除'
 )comment '接口信息' collate = utf8mb4_unicode_ci;
+
+
+create table if not exists user_interface_info
+(
+    id          bigint auto_increment                   primary key comment 'id',
+    userId      bigint                           		not null    comment '用户id',
+    interfaceId bigint                           		not null    comment '接口id',
+    url         varchar(512)                            not null    comment '接口地址',
+    status      int                 default 0           not null    comment '接口状态（0-关闭，1-开启)',
+    totalNum	int					default 0			not null    comment '总调用次数',
+    leftNum 	int				    default 0			not null	comment '剩余调用次数',
+    createTime      datetime default CURRENT_TIMESTAMP  not null    comment '创建时间',
+    updateTime      datetime default CURRENT_TIMESTAMP  not null on update CURRENT_TIMESTAMP  comment '修改时间',
+    isDelete        tinyint         default 0           not null    comment '逻辑删除'
+)comment '用户接口关系表' collate = utf8mb4_unicode_ci;
