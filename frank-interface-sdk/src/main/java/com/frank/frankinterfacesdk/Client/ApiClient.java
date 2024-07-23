@@ -16,7 +16,7 @@ public class ApiClient {
 
     private String accessKey;
     private String secretKey;
-
+    private static final String uri = "http://localhost:8200";
     public ApiClient(String accessKey, String secretKey) {
         this.accessKey = accessKey;
         this.secretKey = secretKey;
@@ -26,7 +26,7 @@ public class ApiClient {
         //可以单独传入http参数，这样参数会自动做URL编码，拼接在URL中
         HashMap<String, Object> paramMap = new HashMap<>();
         paramMap.put("name", "frank");
-        String result = HttpUtil.get("http://localhost:8122/api/user/",paramMap);
+        String result = HttpUtil.get(uri + "/api/user/",paramMap);
         System.out.println(result);
         return result;
     }
@@ -35,14 +35,14 @@ public class ApiClient {
         HashMap<String, Object> paramMap = new HashMap<>();
         paramMap.put("name", "frank");
 
-        String result = HttpUtil.post("http://localhost:8122/api/user/" ,paramMap);
+        String result = HttpUtil.post(uri +"/api/user/" ,paramMap);
         System.out.println(result);
         return result;
     }
 
     public String getNameByPost(User user){
         String json = JSONUtil.toJsonStr(user);
-        HttpResponse httpResponse = HttpRequest.post("http://localhost:8122/api/user/name")
+        HttpResponse httpResponse = HttpRequest.post(uri + "/api/user/name")
                 .addHeaders(genHeaderMap())
                 .body(json)
                 .execute();

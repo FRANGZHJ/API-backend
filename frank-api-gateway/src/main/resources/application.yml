@@ -1,0 +1,16 @@
+server:
+  port: 8200
+spring:
+  cloud:
+    gateway:
+      routes:
+        - id: api_route
+          uri: http://localhost:8122
+          predicates:
+            - Path=/api/user/**
+logging:
+  level:
+    org:
+      springframework:
+        cloud:
+          gateway: trace
