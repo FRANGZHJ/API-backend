@@ -22,6 +22,7 @@ import reactor.core.publisher.Mono;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 /**
@@ -67,25 +68,37 @@ public class CustomGlobalFilter implements GlobalFilter, Ordered {
 
     public Mono<Void> handleResponse(ServerWebExchange exchange, GatewayFilterChain chain){
         try{
+            //获得原始的响应对象
             ServerHttpResponse originalResponse = exchange.getResponse();
+            //获得数据缓冲工厂
             DataBufferFactory bufferFactory = originalResponse.bufferFactory();
+            //获得响应状态码
             HttpStatus statusCode = originalResponse.getStatusCode();
+            //判断状态码是否为200(但是此时应该还没有调用，应该拿不到响应码)
             if(statusCode == HttpStatus.OK){
+                //创建一个装饰的响应的独享
                 ServerHttpResponseDecorator serverHttpResponseDecorator = new ServerHttpResponseDecorator(originalResponse){
                     @Override
+                    //重写方法，用户处理响应题的数据
+                    //这个方法就是模拟接口调用之后，这个函数来处理结果
                     public Mono<Void> writeWith(Publisher<? extends DataBuffer> body) {
                         log.info("body instanceof Flux: {}", (body instanceof Flux));
+                        //判断响应体是否为Flux类型
                         if(body instanceof Flux){
                             Flux<? extends DataBuffer> fluxBody = Flux.from(body);
+                            //返回一个处理后的响应体
                             return super.writeWith(fluxBody.map(dataBuffer -> {
+                                //读取响应体的内容转换为字节数组
                                 byte[] content = new byte[dataBuffer.readableByteCount()];
                                 dataBuffer.read(content);
+                                //释放掉内存
                                 DataBufferUtils.release(dataBuffer);
                                 StringBuilder sb2  = new StringBuilder(200);
                                 sb2.append("<--- {} {} \n");
                                 List<Object> rspArgs = new ArrayList<>();
                                 rspArgs.add(originalResponse.getStatusCode());
                                 String data = new String(content, StandardCharsets.UTF_8);
+                                //todo 这里要进行调用接口次数 +1 操作
                                 sb2.append(data);
                                 log.info(sb2.toString(), rspArgs.toArray());
                                 return bufferFactory.wrap(content);
@@ -96,11 +109,14 @@ public class CustomGlobalFilter implements GlobalFilter, Ordered {
                         return super.writeWith(body);
                     }
                 };
+                //对于200的请求，将装饰后的对象传递给下一个过滤器链，并继续处理
                 return chain.filter(exchange.mutate().response(serverHttpResponseDecorator).build());
 
             }
+            //如果非200，就直接返回
             return chain.filter(exchange);
         } catch (Exception e){
+            //处理异常情况
             log.error("gateway log exception. \n" + e);
             return chain.filter(exchange);
         }
