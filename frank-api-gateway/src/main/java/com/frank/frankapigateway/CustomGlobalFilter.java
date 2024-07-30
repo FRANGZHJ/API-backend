@@ -1,7 +1,11 @@
 package com.frank.frankapigateway;
 
+import com.frank.frankcommon.entity.User;
+import com.frank.frankcommon.service.innerUserInterfaceInfoService;
+import com.frank.frankcommon.service.innerUserService;
 import com.frank.frankinterfacesdk.utils.DigesterUtil;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.dubbo.config.annotation.DubboReference;
 import org.reactivestreams.Publisher;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
@@ -34,6 +38,11 @@ import java.util.List;
 @Component
 public class CustomGlobalFilter implements GlobalFilter, Ordered {
 
+    @DubboReference
+    private innerUserService inneruserService;
+
+    @DubboReference
+    private innerUserInterfaceInfoService inneruserInterfacneInfoService;
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         log.info("custom global filter");
@@ -44,7 +53,7 @@ public class CustomGlobalFilter implements GlobalFilter, Ordered {
         log.info("请求方法：" + request.getMethod());
         log.info("请求参数: " + request.getQueryParams());
         log.info("请求来源地址：" + request.getRemoteAddress());
-//        3. 用户鉴权，判断ak，sk是否合法
+//       todo 3. 用户鉴权，判断ak，sk是否合法
         //获得各个响应头
         HttpHeaders headers = request.getHeaders();
         String accessKey = headers.getFirst("accessKey");
@@ -52,21 +61,29 @@ public class CustomGlobalFilter implements GlobalFilter, Ordered {
         String nonce = headers.getFirst("nonce");
         String timeStamp = headers.getFirst("timeStamp");
         //从数据库中查询sk
-        String secertKey = "123bbb";
-        String content = DigesterUtil.getDigest().digestHex(accessKey + '.' + secertKey);
+        User invokeUser = inneruserService.getInvokeUser(accessKey);
+        String secretKey = invokeUser.getSecretKey();
+        String content = DigesterUtil.getDigest().digestHex(accessKey + '.' + secretKey);
         ServerHttpResponse response = exchange.getResponse();
         if(!content.equals(sign)){
             return handleNoAuth(response);
         }
-// TODO: 2024/7/23  4. 请求的模拟接口是否存在， 从数据库中查询
+        //先查询一下该用户的leftNum是否还有
+        //然后再扣除
+        try{
+            inneruserInterfacneInfoService.invokeCount(1L, invokeUser.getId());
+        }catch (Exception e){
+            return handleNoAuth(response);
+        }
+
 
 //        5. 响应日志
 //        6. 调用成功，接口调用次数+1
 //        7. 调用失败，返回一个错误码
-        return handleResponse(exchange,chain);
+        return handleResponse(exchange,chain, 1L,invokeUser.getId());
     }
 
-    public Mono<Void> handleResponse(ServerWebExchange exchange, GatewayFilterChain chain){
+    public Mono<Void> handleResponse(ServerWebExchange exchange, GatewayFilterChain chain,long interfaceId, long userId){
         try{
             //获得原始的响应对象
             ServerHttpResponse originalResponse = exchange.getResponse();
@@ -99,6 +116,7 @@ public class CustomGlobalFilter implements GlobalFilter, Ordered {
                                 rspArgs.add(originalResponse.getStatusCode());
                                 String data = new String(content, StandardCharsets.UTF_8);
                                 //todo 这里要进行调用接口次数 +1 操作
+
                                 sb2.append(data);
                                 log.info(sb2.toString(), rspArgs.toArray());
                                 return bufferFactory.wrap(content);
