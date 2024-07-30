@@ -13,6 +13,7 @@ import org.springframework.core.Ordered;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.core.io.buffer.DataBufferFactory;
 import org.springframework.core.io.buffer.DataBufferUtils;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.server.reactive.ServerHttpRequest;
@@ -23,11 +24,13 @@ import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import javax.annotation.Resource;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author Frank
@@ -37,6 +40,11 @@ import java.util.List;
 @Slf4j
 @Component
 public class CustomGlobalFilter implements GlobalFilter, Ordered {
+
+    private static final long TIME_RANGE = 60L;
+
+    @Resource
+    private StringRedisTemplate stringRedisTemplate;
 
     @DubboReference
     private innerUserService inneruserService;
@@ -60,11 +68,23 @@ public class CustomGlobalFilter implements GlobalFilter, Ordered {
         String sign = headers.getFirst("sign");
         String nonce = headers.getFirst("nonce");
         String timeStamp = headers.getFirst("timeStamp");
+        //先判断时间戳，如果超过了60s，直接拒绝
+        long sysTime = System.currentTimeMillis() / 1000;
+        long requestTime = Long.valueOf(timeStamp);
+        ServerHttpResponse response = exchange.getResponse();
+        if(sysTime > requestTime + TIME_RANGE ||
+           sysTime < requestTime - TIME_RANGE ){
+            return handleNoAuth(response);
+        }
+        if(stringRedisTemplate.opsForValue().get(nonce) != null){
+            return handleNoAuth(response);
+        }
+        stringRedisTemplate.opsForValue().set(nonce,"1",60L, TimeUnit.SECONDS);
         //从数据库中查询sk
         User invokeUser = inneruserService.getInvokeUser(accessKey);
         String secretKey = invokeUser.getSecretKey();
-        String content = DigesterUtil.getDigest().digestHex(accessKey + '.' + secretKey);
-        ServerHttpResponse response = exchange.getResponse();
+        String content = DigesterUtil.getDigest().digestHex(accessKey + '.' + secretKey + '.' +nonce);
+
         if(!content.equals(sign)){
             return handleNoAuth(response);
         }

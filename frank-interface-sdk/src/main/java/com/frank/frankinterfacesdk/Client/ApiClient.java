@@ -9,8 +9,13 @@ import cn.hutool.json.JSONUtil;
 import com.frank.frankinterfacesdk.model.User;
 import com.frank.frankinterfacesdk.utils.DigesterUtil;
 
+import java.sql.SQLOutput;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Random;
 
 public class ApiClient {
 
@@ -54,12 +59,26 @@ public class ApiClient {
 
     private Map<String,String> genHeaderMap(){
         Map<String,String> headersMap = new HashMap<>();
+        long randomNum = RandomUtil.randomInt() & 0x7fffffff; // 去掉符号位
+        long timeStamp = System.currentTimeMillis()/1000;
+        long nonce = randomNum << 32 | timeStamp;
+        String content = DigesterUtil.getDigest().digestHex(accessKey + '.' + secretKey + '.' + nonce);
         headersMap.put("accesskey",accessKey);
-        String content = DigesterUtil.getDigest().digestHex(accessKey + '.' + secretKey);
         headersMap.put("sign",content);
-        headersMap.put("nonce", RandomUtil.randomNumbers(100));
-        headersMap.put("timeStamp",String.valueOf(System.currentTimeMillis()/1000));
+        headersMap.put("nonce", String.valueOf(nonce));
+        headersMap.put("timeStamp",String.valueOf(timeStamp));
         return headersMap;
+    }
+
+    public static void main(String[] args) {
+        LocalDateTime now = LocalDateTime.now();
+        long timestamp = now.toEpochSecond(ZoneOffset.UTC);
+        long nonce = RandomUtil.randomInt() & 0x7fffffff;
+        long timeStamp = LocalDateTime.now().toEpochSecond(ZoneOffset.UTC);
+        System.out.println(nonce);
+        System.out.println(timeStamp);
+        System.out.println(timestamp << 32 | timestamp);
+
     }
 
 }
